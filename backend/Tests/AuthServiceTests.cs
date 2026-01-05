@@ -16,7 +16,7 @@ public class AuthServiceTests
     public AuthServiceTests()
     {
         var store = new Mock<IUserStore<IdentityUser>>();
-        _mockUserManager = new Mock<UserManager<IdentityUser>>(store.Object, null, null, null, null, null, null, null, null);
+        _mockUserManager = new Mock<UserManager<IdentityUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
         _mockConfiguration = new Mock<IConfiguration>();
         _authService = new AuthService(_mockUserManager.Object, _mockConfiguration.Object);
     }
@@ -49,7 +49,7 @@ public class AuthServiceTests
     {
         // Arrange
         var email = "test@example.com";
-        _mockUserManager.Setup(x => x.FindByEmailAsync(email)).ReturnsAsync((IdentityUser)null);
+        _mockUserManager.Setup(x => x.FindByEmailAsync(email)).ReturnsAsync((IdentityUser?)null);
 
         var dto = new LoginDto { Email = email, Password = "password" };
 
