@@ -5,12 +5,14 @@ import { useAuthStore } from '../stores/auth'
 const email = ref('')
 const password = ref('')
 const authStore = useAuthStore()
+const errorMessage = ref('')
 
 const handleSubmit = async () => {
+  errorMessage.value = ''
   try {
     await authStore.login(email.value, password.value)
   } catch (e) {
-    alert('Login failed')
+    errorMessage.value = e.response?.data?.message || 'Login failed'
   }
 }
 </script>
@@ -19,6 +21,12 @@ const handleSubmit = async () => {
   <div class="flex min-h-screen items-center justify-center bg-gray-100">
     <div class="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
       <h2 class="mb-6 text-center text-2xl font-bold text-gray-800">Login</h2>
+      
+      <div v-if="errorMessage" class="mb-4 rounded bg-red-100 border border-red-400 text-red-700 px-4 py-3 relative" role="alert">
+        <strong class="font-bold">Error: </strong>
+        <span class="block sm:inline">{{ errorMessage }}</span>
+      </div>
+
       <form @submit.prevent="handleSubmit">
         <div class="mb-4">
           <label class="mb-2 block text-sm font-bold text-gray-700" for="email">Email</label>

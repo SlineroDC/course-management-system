@@ -20,7 +20,12 @@ public static class DataSeeder
 
         if (userManager.Users.All(u => u.UserName != defaultUser.UserName))
         {
-            await userManager.CreateAsync(defaultUser, "Password123!");
+            var result = await userManager.CreateAsync(defaultUser, "Password123!");
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception($"Failed to seed default user: {errors}");
+            }
         }
     }
 }

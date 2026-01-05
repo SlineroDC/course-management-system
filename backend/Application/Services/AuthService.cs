@@ -6,34 +6,30 @@ using Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+
 namespace Application.Services;
 
-public class AuthService : IAuthService
+public class AuthService(UserManager<IdentityUser> userManager, IConfiguration configuration) : IAuthService
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly IConfiguration _configuration;
+    private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IConfiguration _configuration = configuration;
 
-    public AuthService(UserManager<IdentityUser> userManager, IConfiguration configuration)
+    public async Task<AuthResponseDto> LoginAsync(LoginDto request)
     {
-        _userManager = userManager;
-        _configuration = configuration;
-    }
-
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
-    {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
+        var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
-            throw new Exception("Invalid credentials");
+            throw new Exception("User not found");
         }
 
-        var result = await _userManager.CheckPasswordAsync(user, dto.Password);
+        var result = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!result)
         {
-            throw new Exception("Invalid credentials");
+            throw new Exception("Invalid password");
         }
 
         var token = GenerateJwtToken(user);
+
         return new AuthResponseDto
         {
             Token = token,
@@ -41,15 +37,15 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResponseDto> RegisterAsync(RegisterDto request)
     {
         var user = new IdentityUser
         {
-            UserName = dto.Email,
-            Email = dto.Email
+            UserName = request.Email,
+            Email = request.Email
         };
 
-        var result = await _userManager.CreateAsync(user, dto.Password);
+        var result = await _userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded)
         {
@@ -58,6 +54,7 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateJwtToken(user);
+
         return new AuthResponseDto
         {
             Token = token,
@@ -67,26 +64,21 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(IdentityUser user)
     {
-        var jwtKey = _configuration["Jwt:Key"] ?? "r65F84LLxYf4AipcD3454646";
-        var key = Encoding.UTF8.GetBytes(jwtKey);
-
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(2),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-            Issuer = null, // Set to null as per Program.cs validation settings
-            Audience = null
-        };
+        var jwtKey = _configuration["Jwt:Key"] ?? "ThisIsASuperSecureKeyForJwtTokenGeneration2024!";
+        var key = Encoding.ASCII.GetBytes(jwtKey);
 
         var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Email, user.Email!)
+            }),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }

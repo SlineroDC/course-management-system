@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,9 +15,29 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
         return await _context.Courses.ToListAsync();
     }
 
+    public async Task<(IEnumerable<Course> Items, int TotalItems)> GetPagedAsync(int pageNumber, int pageSize, string? status)
+    {
+        var query = _context.Courses.AsQueryable();
+
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<CourseStatus>(status, out var statusEnum))
+        {
+            query = query.Where(c => c.Status == statusEnum);
+        }
+
+        var totalItems = await query.CountAsync();
+        var items = await query
+            .Include(c => c.Lessons.Where(l => !l.IsDeleted).OrderBy(l => l.Order))
+            .OrderByDescending(c => c.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalItems);
+    }
+
     public async Task<Course?> GetByIdAsync(Guid id)
     {
-        return await _context.Courses.Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == id);
+        return await _context.Courses.Include(c => c.Lessons.Where(l => !l.IsDeleted).OrderBy(l => l.Order)).FirstOrDefaultAsync(c => c.Id == id);
     }
 
     public async Task AddAsync(Course course)

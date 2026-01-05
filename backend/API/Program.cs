@@ -13,7 +13,7 @@ builder
     .Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
-var jwtkey = builder.Configuration["Jwt:Key"] ?? "r65F84LLxYf4AipcD3454646";
+var jwtkey = builder.Configuration["Jwt:Key"] ?? "ThisIsASuperSecureKeyForJwtTokenGeneration2024!";
 var key = Encoding.UTF8.GetBytes(jwtkey);
 
 builder

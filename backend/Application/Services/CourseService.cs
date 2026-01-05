@@ -12,13 +12,20 @@ public class CourseService(ICourseRepository repository) : ICourseService
     public async Task<IEnumerable<CourseResponse>> GetAllAsync()
     {
         var courses = await _repository.GetAllAsync();
-        return courses.Select(c => new CourseResponse
+        return courses.Select(MapToResponse);
+    }
+
+    public async Task<PagedResponse<CourseResponse>> GetPagedAsync(int pageNumber, int pageSize, string? status)
+    {
+        var (items, totalItems) = await _repository.GetPagedAsync(pageNumber, pageSize, status);
+
+        return new PagedResponse<CourseResponse>
         {
-            Id = c.Id,
-            Title = c.Title,
-            Status = c.Status.ToString(),
-            CreatedAt = c.CreatedAt,
-        });
+            Items = items.Select(MapToResponse),
+            TotalItems = totalItems,
+            CurrentPage = pageNumber,
+            TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize)
+        };
     }
 
     public async Task<CourseResponse?> GetByIdAsync(Guid id)
@@ -27,22 +34,7 @@ public class CourseService(ICourseRepository repository) : ICourseService
         if (course == null)
             return null;
 
-        return new CourseResponse
-        {
-            Id = course.Id,
-            Title = course.Title,
-            Status = course.Status.ToString(),
-            CreatedAt = course.CreatedAt,
-            Lessons = course
-                .Lessons.Select(l => new LessonResponse
-                {
-                    Id = l.Id,
-                    Title = l.Title,
-                    Order = l.Order,
-                    CourseId = l.CourseId,
-                })
-                .ToList(),
-        };
+        return MapToResponse(course);
     }
 
     public async Task<CourseResponse> CreateAsync(CourseRequest request)
@@ -50,17 +42,22 @@ public class CourseService(ICourseRepository repository) : ICourseService
         var course = new Course
         {
             Title = request.Title,
-            Status = CourseStatus.Draft, // Estado inicial
+            Status = CourseStatus.Draft,
         };
 
         await _repository.AddAsync(course);
 
-        return new CourseResponse
-        {
-            Id = course.Id,
-            Title = course.Title,
-            Status = course.Status.ToString(),
-        };
+        return MapToResponse(course);
+    }
+
+    public async Task UpdateAsync(Guid id, CourseRequest request)
+    {
+        var course = await _repository.GetByIdAsync(id);
+        if (course == null)
+            throw new KeyNotFoundException("Course not found");
+
+        course.Title = request.Title;
+        await _repository.UpdateAsync(course);
     }
 
     public async Task PublishCourseAsync(Guid id)
@@ -69,7 +66,6 @@ public class CourseService(ICourseRepository repository) : ICourseService
         if (course == null)
             throw new KeyNotFoundException("Course not found.");
 
-        // REGLA DE NEGOCIO: No publicar sin lecciones
         var hasLessons = await _repository.HasLessonsAsync(id);
         if (!hasLessons)
         {
@@ -80,8 +76,36 @@ public class CourseService(ICourseRepository repository) : ICourseService
         await _repository.UpdateAsync(course);
     }
 
+    public async Task UnpublishCourseAsync(Guid id)
+    {
+        var course = await _repository.GetByIdAsync(id);
+        if (course == null)
+            throw new KeyNotFoundException("Course not found.");
+
+        course.Status = CourseStatus.Draft;
+        await _repository.UpdateAsync(course);
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         await _repository.DeleteAsync(id);
+    }
+
+    private static CourseResponse MapToResponse(Course c)
+    {
+        return new CourseResponse
+        {
+            Id = c.Id,
+            Title = c.Title,
+            Status = c.Status.ToString(),
+            CreatedAt = c.CreatedAt,
+            Lessons = c.Lessons?.Select(l => new LessonResponse
+            {
+                Id = l.Id,
+                Title = l.Title,
+                Order = l.Order,
+                CourseId = l.CourseId,
+            }).ToList() ?? []
+        };
     }
 }
