@@ -1,0 +1,95 @@
+## =========================
+## .NET / Visual Studio
+## =========================
+
+# JetBrains Rider
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Build results
+bin/
+obj/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]ny CPU/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.log
+*.ilk
+*.pdb
+*.tmp
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Resharper
+_ReSharper*/
+*.DotSettings.user
+
+# ASP.NET Core
+appsettings.Development.json
+appsettings.Local.json
+
+# Environment variables
+.env
+.env.*
+
+# Publish output
+publish/
+*.Publish.xml
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+.nuget/
+project.lock.json
+project.assets.json
+
+# EF Core
+Migrations/*.Designer.cs
+Migrations/*.Snapshot.cs
+
+# Logs
+logs/
+*.log
+
+# Test results
+TestResults/
+*.trx
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Certificates
+*.pfx
+*.cer
+
+# Temporary files
+*.swp
+*.bak
+*.orig
