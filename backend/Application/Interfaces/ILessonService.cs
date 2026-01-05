@@ -1,0 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Application.DTOs;
+
+namespace Application.Interfaces;
+
+public interface ILessonService
+{
+    Task<LessonResponse> CreateAsync(LessonRequest request);
+}

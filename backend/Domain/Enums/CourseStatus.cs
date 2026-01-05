@@ -1,6 +1,7 @@
 namespace Domain.Enums;
 
-public class CourseStatus
+public enum CourseStatus
 {
-    
+    Draft,
+    Published,
 }
