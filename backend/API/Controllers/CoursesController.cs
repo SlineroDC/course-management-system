@@ -64,8 +64,19 @@ public class CoursesController(ICourseService courseService) : ControllerBase
     [HttpPost("{id}/unpublish")]
     public async Task<IActionResult> Unpublish(Guid id)
     {
-        await _courseService.UnpublishCourseAsync(id);
-        return NoContent();
+        try
+        {
+            await _courseService.UnpublishCourseAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]

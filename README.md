@@ -83,3 +83,41 @@ Run the backend unit tests:
 ```bash
 dotnet test backend/Tests/Tests.csproj
 ```
+
+## 📚 Documentation
+
+- **[Quick Guide](./QUICK_GUIDE.md)** - Guía rápida de uso
+- **[Credentials & Setup](./CREDENTIALS_AND_SETUP.md)** - Credenciales de prueba y configuración
+- **[Implementation Summary](./IMPLEMENTATION_SUMMARY.md)** - Resumen técnico completo
+
+## ✨ Últimas Mejoras (v1.0)
+
+✅ **Validación de Order**: Min 1, No duplicados
+✅ **Reordenamiento**: Botones 🔼/🔽 para mover lecciones
+✅ **Edición sin Duplicados**: PUT /lessons/{id}
+✅ **Soft Delete**: Las lecciones eliminadas no aparecen
+✅ **Mensajes de Error**: Captura y muestra de errores 400 BAD REQUEST
+✅ **Sincronización Automática**: UI actualiza después de cada acción
+✅ **Botón Despublicar**: Cambiar de Published a Draft
+
+## 🔗 Endpoints API
+
+```
+Cursos:
+  GET    /api/courses?pageNumber=1&pageSize=10&status=Draft
+  POST   /api/courses
+  PUT    /api/courses/{id}
+  DELETE /api/courses/{id}
+  POST   /api/courses/{id}/publish
+  POST   /api/courses/{id}/unpublish
+
+Lecciones:
+  POST   /api/lessons
+  PUT    /api/lessons/{id}
+  DELETE /api/lessons/{id}
+  PUT    /api/lessons/{id}/move-up
+  PUT    /api/lessons/{id}/move-down
+```
+
+---
+

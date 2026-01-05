@@ -24,6 +24,8 @@ const newLessonOrder = ref(1)
 // Edit Lesson State
 const editingLessonId = ref(null)
 const editingLessonTitle = ref('')
+const editingLessonOrder = ref(null)
+const lessonError = ref('')
 
 onMounted(() => {
   loadCourses()
@@ -39,11 +41,13 @@ const loadCourses = (page = 1) => {
 
 const handleCreateCourse = async () => {
   if (!newCourseTitle.value) return
+  actionError.value = ''
   try {
     await courseStore.createCourse(newCourseTitle.value)
     newCourseTitle.value = ''
   } catch (e) {
-    alert('Failed to create course')
+    actionError.value = e.response?.data?.message || 'Failed to create course'
+    setTimeout(() => actionError.value = '', 5000)
   }
 }
 
@@ -54,20 +58,24 @@ const openEditCourseModal = (course) => {
 }
 
 const handleUpdateCourse = async () => {
+  actionError.value = ''
   try {
     await courseStore.updateCourse(editingCourseId.value, editingCourseTitle.value)
     showEditCourseModal.value = false
   } catch (e) {
-    alert('Failed to update course')
+    actionError.value = e.response?.data?.message || 'Failed to update course'
+    setTimeout(() => actionError.value = '', 5000)
   }
 }
 
 const handleDelete = async (id) => {
   if (!confirm('Are you sure?')) return
+  actionError.value = ''
   try {
     await courseStore.deleteCourse(id)
   } catch (e) {
-    alert('Failed to delete course')
+    actionError.value = e.response?.data?.message || 'Failed to delete course'
+    setTimeout(() => actionError.value = '', 5000)
   }
 }
 
@@ -82,10 +90,12 @@ const handlePublish = async (id) => {
 }
 
 const handleUnpublish = async (id) => {
+  actionError.value = ''
   try {
     await courseStore.unpublishCourse(id)
   } catch (e) {
-    alert('Failed to unpublish')
+    actionError.value = e.response?.data?.message || 'Failed to unpublish course'
+    setTimeout(() => actionError.value = '', 5000)
   }
 }
 
@@ -102,7 +112,12 @@ const openLessonModal = (course) => {
 }
 
 const handleAddLesson = async () => {
+  lessonError.value = ''
   try {
+    if (newLessonOrder.value <= 0) {
+      lessonError.value = 'Lesson order must be greater than 0'
+      return
+    }
     await courseStore.createLesson(selectedCourse.value.id, newLessonTitle.value, newLessonOrder.value)
     await loadCourses(courseStore.currentPage)
     
@@ -113,54 +128,67 @@ const handleAddLesson = async () => {
     newLessonTitle.value = ''
     newLessonOrder.value = updatedCourse ? (Math.max(...updatedCourse.lessons.map(l => l.order)) + 1) : 1
   } catch (e) {
-    alert(e.response?.data?.message || 'Failed to add lesson')
+    lessonError.value = e.response?.data?.message || 'Failed to add lesson'
   }
 }
 
 const startEditLesson = (lesson) => {
   editingLessonId.value = lesson.id
   editingLessonTitle.value = lesson.title
+  editingLessonOrder.value = lesson.order
+  lessonError.value = ''
 }
 
 const saveEditLesson = async (lesson) => {
+  lessonError.value = ''
   try {
-    await courseStore.updateLesson(lesson.id, lesson.courseId, editingLessonTitle.value, lesson.order)
+    if (editingLessonOrder.value <= 0) {
+      lessonError.value = 'Lesson order must be greater than 0'
+      return
+    }
+    await courseStore.updateLesson(lesson.id, lesson.courseId, editingLessonTitle.value, editingLessonOrder.value)
     editingLessonId.value = null
     await loadCourses(courseStore.currentPage)
     const updatedCourse = courseStore.courses.find(c => c.id === selectedCourse.value.id)
     if (updatedCourse) selectedCourse.value = updatedCourse
   } catch (e) {
-    alert('Failed to update lesson')
+    lessonError.value = e.response?.data?.message || 'Failed to update lesson'
   }
 }
 
 const cancelEditLesson = () => {
   editingLessonId.value = null
   editingLessonTitle.value = ''
+  editingLessonOrder.value = null
+  lessonError.value = ''
 }
 
 const handleDeleteLesson = async (lessonId) => {
   if(!confirm('Delete lesson?')) return
+  lessonError.value = ''
   try {
     await courseStore.deleteLesson(lessonId)
     await loadCourses(courseStore.currentPage)
     const updatedCourse = courseStore.courses.find(c => c.id === selectedCourse.value.id)
     if (updatedCourse) selectedCourse.value = updatedCourse
   } catch (e) {
-    alert('Failed to delete lesson')
+    lessonError.value = e.response?.data?.message || 'Failed to delete lesson'
   }
 }
 
 const moveLesson = async (lesson, direction) => {
-  const lessons = [...selectedCourse.value.lessons].sort((a, b) => a.order - b.order)
-  const index = lessons.findIndex(l => l.id === lesson.id)
-  
-  if (direction === 'up' && index > 0) {
-    const prevLesson = lessons[index - 1]
-    await swapLessons(lesson, prevLesson)
-  } else if (direction === 'down' && index < lessons.length - 1) {
-    const nextLesson = lessons[index + 1]
-    await swapLessons(lesson, nextLesson)
+  lessonError.value = ''
+  try {
+    if (direction === 'up') {
+      await courseStore.moveUpLesson(lesson.id)
+    } else {
+      await courseStore.moveDownLesson(lesson.id)
+    }
+    await loadCourses(courseStore.currentPage)
+    const updatedCourse = courseStore.courses.find(c => c.id === selectedCourse.value.id)
+    if (updatedCourse) selectedCourse.value = updatedCourse
+  } catch (e) {
+    lessonError.value = e.response?.data?.message || `Failed to move lesson ${direction}`
   }
 }
 
@@ -316,10 +344,15 @@ const swapLessons = async (lessonA, lessonB) => {
             </div>
 
             <!-- Add Lesson Form -->
-            <form @submit.prevent="handleAddLesson" class="mb-6 flex gap-2 rounded bg-gray-50 p-4">
-              <input v-model="newLessonTitle" type="text" placeholder="Lesson Title" class="flex-1 rounded border px-3 py-2" required>
-              <input v-model="newLessonOrder" type="number" placeholder="Order" class="w-20 rounded border px-3 py-2" required>
-              <button type="submit" class="rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700">Add</button>
+            <form @submit.prevent="handleAddLesson" class="mb-6 rounded bg-gray-50 p-4">
+              <div v-if="lessonError" class="mb-3 rounded bg-red-100 border border-red-400 text-red-700 px-3 py-2 text-sm">
+                {{ lessonError }}
+              </div>
+              <div class="flex gap-2">
+                <input v-model="newLessonTitle" type="text" placeholder="Lesson Title" class="flex-1 rounded border px-3 py-2" required>
+                <input v-model.number="newLessonOrder" type="number" min="1" placeholder="Order" class="w-20 rounded border px-3 py-2" required>
+                <button type="submit" class="rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700">Add</button>
+              </div>
             </form>
 
             <!-- Lesson List -->
@@ -343,7 +376,8 @@ const swapLessons = async (lessonA, lessonB) => {
                 <!-- Edit Mode -->
                 <div v-else class="flex flex-1 items-center gap-2">
                   <input v-model="editingLessonTitle" type="text" class="flex-1 rounded border px-2 py-1">
-                  <button @click="saveEditLesson(lesson)" class="text-green-600 hover:text-green-800">Save</button>
+                  <input v-model.number="editingLessonOrder" type="number" min="1" class="w-16 rounded border px-2 py-1">
+                  <button @click="saveEditLesson(lesson)" class="text-green-600 hover:text-green-800 font-medium">Save</button>
                   <button @click="cancelEditLesson" class="text-gray-500 hover:text-gray-700">Cancel</button>
                 </div>
 

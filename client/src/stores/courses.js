@@ -93,6 +93,20 @@ export const useCourseStore = defineStore('courses', {
       } catch (e) {
         throw e
       }
+    },
+    async moveUpLesson(id) {
+      try {
+        await axios.put(`/lessons/${id}/move-up`)
+      } catch (e) {
+        throw e
+      }
+    },
+    async moveDownLesson(id) {
+      try {
+        await axios.put(`/lessons/${id}/move-down`)
+      } catch (e) {
+        throw e
+      }
     }
   }
 })
