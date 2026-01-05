@@ -7,14 +7,9 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class LessonsController : ControllerBase
+public class LessonsController(ILessonService lessonService) : ControllerBase
 {
-    private readonly ILessonService _lessonService;
-
-    public LessonsController(ILessonService lessonService)
-    {
-        _lessonService = lessonService;
-    }
+    private readonly ILessonService _lessonService = lessonService;
 
     [HttpPost]
     public async Task<ActionResult<LessonResponse>> Create(LessonRequest request)

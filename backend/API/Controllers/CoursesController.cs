@@ -7,14 +7,9 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CoursesController : ControllerBase
+public class CoursesController(ICourseService courseService) : ControllerBase
 {
-    private readonly ICourseService _courseService;
-
-    public CoursesController(ICourseService courseService)
-    {
-        _courseService = courseService;
-    }
+    private readonly ICourseService _courseService = courseService;
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CourseResponse>>> GetAll()
