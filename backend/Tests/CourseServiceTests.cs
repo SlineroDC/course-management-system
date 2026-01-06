@@ -41,7 +41,12 @@ public class CourseServiceTests
     {
         // Arrange
         var courseId = Guid.NewGuid();
-        var course = new Course { Id = courseId, Title = "Test Course", Status = CourseStatus.Draft };
+        var course = new Course
+        {
+            Id = courseId,
+            Title = "Test Course",
+            Status = CourseStatus.Draft,
+        };
 
         _mockRepository.Setup(x => x.GetByIdAsync(courseId)).ReturnsAsync(course);
         _mockRepository.Setup(x => x.HasLessonsAsync(courseId)).ReturnsAsync(true);
@@ -59,13 +64,20 @@ public class CourseServiceTests
     {
         // Arrange
         var courseId = Guid.NewGuid();
-        var course = new Course { Id = courseId, Title = "Test Course", Status = CourseStatus.Draft };
+        var course = new Course
+        {
+            Id = courseId,
+            Title = "Test Course",
+            Status = CourseStatus.Draft,
+        };
 
         _mockRepository.Setup(x => x.GetByIdAsync(courseId)).ReturnsAsync(course);
         _mockRepository.Setup(x => x.HasLessonsAsync(courseId)).ReturnsAsync(false);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _courseService.PublishCourseAsync(courseId));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _courseService.PublishCourseAsync(courseId)
+        );
         _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<Course>()), Times.Never);
     }
 

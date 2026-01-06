@@ -19,7 +19,10 @@ public class RoleAuthorizationTests
     {
         _mockCourseRepository = new Mock<ICourseRepository>();
         _mockLessonRepository = new Mock<ILessonRepository>();
-        _courseService = new CourseService(_mockCourseRepository.Object, _mockLessonRepository.Object);
+        _courseService = new CourseService(
+            _mockCourseRepository.Object,
+            _mockLessonRepository.Object
+        );
     }
 
     [Fact]
@@ -44,11 +47,11 @@ public class RoleAuthorizationTests
     {
         // Arrange
         var courseId = Guid.NewGuid();
-        var course = new Course 
-        { 
-            Id = courseId, 
-            Title = "Original Title", 
-            Status = CourseStatus.Draft 
+        var course = new Course
+        {
+            Id = courseId,
+            Title = "Original Title",
+            Status = CourseStatus.Draft,
         };
 
         _mockCourseRepository.Setup(x => x.GetByIdAsync(courseId)).ReturnsAsync(course);
@@ -67,11 +70,11 @@ public class RoleAuthorizationTests
     {
         // Arrange
         var courseId = Guid.NewGuid();
-        var course = new Course 
-        { 
-            Id = courseId, 
-            Title = "Test Course", 
-            Status = CourseStatus.Draft 
+        var course = new Course
+        {
+            Id = courseId,
+            Title = "Test Course",
+            Status = CourseStatus.Draft,
         };
 
         _mockCourseRepository.Setup(x => x.GetByIdAsync(courseId)).ReturnsAsync(course);
@@ -90,18 +93,20 @@ public class RoleAuthorizationTests
     {
         // Arrange
         var courseId = Guid.NewGuid();
-        var course = new Course 
-        { 
-            Id = courseId, 
-            Title = "Test Course", 
-            Status = CourseStatus.Draft 
+        var course = new Course
+        {
+            Id = courseId,
+            Title = "Test Course",
+            Status = CourseStatus.Draft,
         };
 
         _mockCourseRepository.Setup(x => x.GetByIdAsync(courseId)).ReturnsAsync(course);
         _mockCourseRepository.Setup(x => x.HasLessonsAsync(courseId)).ReturnsAsync(false);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _courseService.PublishCourseAsync(courseId));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _courseService.PublishCourseAsync(courseId)
+        );
     }
 
     [Fact]
@@ -121,11 +126,7 @@ public class RoleAuthorizationTests
     public async Task AdminRoleShouldHaveUnlimitedAccess()
     {
         // Arrange - Simulate an Admin user with multiple operations
-        var adminUser = new IdentityUser 
-        { 
-            Id = "admin123", 
-            Email = "admin@example.com" 
-        };
+        var adminUser = new IdentityUser { Id = "admin123", Email = "admin@example.com" };
 
         // Test 1: Admin can create courses
         var createRequest = new CourseRequest { Title = "Admin's Course" };
@@ -133,22 +134,31 @@ public class RoleAuthorizationTests
         Assert.NotNull(createdCourse);
 
         // Test 2: Admin can edit any course
-        _mockCourseRepository.Setup(x => x.GetByIdAsync(createdCourse.Id)).ReturnsAsync(
-            new Course { Id = createdCourse.Id, Title = "Admin's Course", Status = CourseStatus.Draft }
-        );
+        _mockCourseRepository
+            .Setup(x => x.GetByIdAsync(createdCourse.Id))
+            .ReturnsAsync(
+                new Course
+                {
+                    Id = createdCourse.Id,
+                    Title = "Admin's Course",
+                    Status = CourseStatus.Draft,
+                }
+            );
 
         var updateRequest = new CourseRequest { Title = "Admin Updated Course" };
         await _courseService.UpdateAsync(createdCourse.Id, updateRequest);
 
         // Test 3: Admin can publish courses
-        var courseForPublish = new Course 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Admin's Published Course", 
-            Status = CourseStatus.Draft 
+        var courseForPublish = new Course
+        {
+            Id = Guid.NewGuid(),
+            Title = "Admin's Published Course",
+            Status = CourseStatus.Draft,
         };
 
-        _mockCourseRepository.Setup(x => x.GetByIdAsync(courseForPublish.Id)).ReturnsAsync(courseForPublish);
+        _mockCourseRepository
+            .Setup(x => x.GetByIdAsync(courseForPublish.Id))
+            .ReturnsAsync(courseForPublish);
         _mockCourseRepository.Setup(x => x.HasLessonsAsync(courseForPublish.Id)).ReturnsAsync(true);
 
         await _courseService.PublishCourseAsync(courseForPublish.Id);
@@ -196,16 +206,16 @@ public class RoleAuthorizationTests
     {
         // Arrange - This would require ILessonService, but demonstrates the concept
         var courseId = Guid.NewGuid();
-        var lessonRequest = new LessonRequest 
-        { 
-            CourseId = courseId, 
-            Title = "Lesson 1", 
-            Order = 1 
+        var lessonRequest = new LessonRequest
+        {
+            CourseId = courseId,
+            Title = "Lesson 1",
+            Order = 1,
         };
 
         // In a real scenario, would verify user owns the course
         // Act & Assert - Basic structure shows the test would validate lesson CRUD on owned courses
-        
+
         Assert.NotNull(lessonRequest);
         Assert.Equal(1, lessonRequest.Order);
     }
