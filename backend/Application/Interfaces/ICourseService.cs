@@ -12,4 +12,6 @@ public interface ICourseService
     Task PublishCourseAsync(Guid id);
     Task UnpublishCourseAsync(Guid id);
     Task DeleteAsync(Guid id);
+    Task HardDeleteAsync(Guid id);
+    Task<MetricsResponse> GetMetricsAsync();
 }

@@ -11,12 +11,14 @@ namespace Tests;
 public class CourseServiceTests
 {
     private readonly Mock<ICourseRepository> _mockRepository;
+    private readonly Mock<ILessonRepository> _mockLessonRepository;
     private readonly CourseService _courseService;
 
     public CourseServiceTests()
     {
         _mockRepository = new Mock<ICourseRepository>();
-        _courseService = new CourseService(_mockRepository.Object);
+        _mockLessonRepository = new Mock<ILessonRepository>();
+        _courseService = new CourseService(_mockRepository.Object, _mockLessonRepository.Object);
     }
 
     [Fact]

@@ -28,12 +28,14 @@ public class AuthService(UserManager<IdentityUser> userManager, IConfiguration c
             throw new Exception("Invalid password");
         }
 
-        var token = GenerateJwtToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = await GenerateJwtTokenAsync(user);
 
         return new AuthResponseDto
         {
             Token = token,
-            Email = user.Email!
+            Email = user.Email!,
+            Roles = roles.ToList()
         };
     }
 
@@ -53,28 +55,44 @@ public class AuthService(UserManager<IdentityUser> userManager, IConfiguration c
             throw new Exception($"Registration failed: {errors}");
         }
 
-        var token = GenerateJwtToken(user);
+        // Assign default User role
+        await _userManager.AddToRoleAsync(user, "User");
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = await GenerateJwtTokenAsync(user);
 
         return new AuthResponseDto
         {
             Token = token,
-            Email = user.Email!
+            Email = user.Email!,
+            Roles = roles.ToList()
         };
     }
 
-    private string GenerateJwtToken(IdentityUser user)
+    private async Task<string> GenerateJwtTokenAsync(IdentityUser user)
     {
         var jwtKey = _configuration["Jwt:Key"] ?? "ThisIsASuperSecureKeyForJwtTokenGeneration2024!";
         var key = Encoding.ASCII.GetBytes(jwtKey);
 
+        // Get user roles
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email!)
+        };
+
+        // Add role claims
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Email, user.Email!)
-            }),
+            Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddDays(7),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };

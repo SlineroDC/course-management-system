@@ -21,6 +21,12 @@ const router = createRouter({
       name: 'dashboard',
       component: DashboardView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/metrics',
+      name: 'metrics',
+      component: () => import('../views/MetricsView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

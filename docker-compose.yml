@@ -1,0 +1,66 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: course-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Qwe.123*
+      POSTGRES_DB: course_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - course-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (.NET 10)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: course-management-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5070
+      ConnectionStrings__DefaultConnection: "Host=db;Database=course_db;Username=postgres;Password=Qwe.123*"
+      Jwt__Key: "ThisIsASuperSecureKeyForJwtTokenGeneration2024!ThisMustBeAtLeast32Characters!"
+      Jwt__Issuer: "CourseManagementAPI"
+      Jwt__Audience: "CourseManagementClient"
+      Jwt__ExpirationMinutes: "60"
+    ports:
+      - "7260:5070"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - course-network
+    restart: unless-stopped
+
+  # Frontend Vue 3
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: course-management-frontend
+    environment:
+      VITE_API_URL: http://api:5070/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    networks:
+      - course-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  course-network:
+    driver: bridge

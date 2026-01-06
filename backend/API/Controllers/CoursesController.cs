@@ -14,7 +14,11 @@ public class CoursesController(ICourseService courseService) : ControllerBase
     private readonly ICourseService _courseService = courseService;
 
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<CourseResponse>>> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? status = null)
+    public async Task<ActionResult<PagedResponse<CourseResponse>>> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? status = null
+    )
     {
         return Ok(await _courseService.GetPagedAsync(pageNumber, pageSize, status));
     }
@@ -80,9 +84,37 @@ public class CoursesController(ICourseService courseService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] bool hardDelete = false)
     {
-        await _courseService.DeleteAsync(id);
+        if (hardDelete)
+        {
+            // Check if user is Admin
+            if (!User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+
+            // Hard delete - physical removal from database
+            var course = await _courseService.GetByIdAsync(id);
+            if (course == null)
+                return NotFound();
+
+            // This requires a new method in the service layer
+            await _courseService.HardDeleteAsync(id);
+        }
+        else
+        {
+            // Soft delete (existing behavior)
+            await _courseService.DeleteAsync(id);
+        }
+
         return NoContent();
+    }
+
+    [HttpGet("metrics")]
+    public async Task<ActionResult<MetricsResponse>> GetMetrics()
+    {
+        var metrics = await _courseService.GetMetricsAsync();
+        return Ok(metrics);
     }
 }

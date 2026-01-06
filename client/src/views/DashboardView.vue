@@ -68,14 +68,17 @@ const handleUpdateCourse = async () => {
   }
 }
 
-const handleDelete = async (id) => {
-  if (!confirm('Are you sure?')) return
-  actionError.value = ''
-  try {
-    await courseStore.deleteCourse(id)
-  } catch (e) {
-    actionError.value = e.response?.data?.message || 'Failed to delete course'
-    setTimeout(() => actionError.value = '', 5000)
+const handleDelete = async (id, hardDelete = false) => {
+  const msg = hardDelete 
+    ? 'Are you sure you want to PERMANENTLY delete this course? This cannot be undone.' 
+    : 'Are you sure you want to delete this course?'
+    
+  if (confirm(msg)) {
+    try {
+      await courseStore.deleteCourse(id, hardDelete)
+    } catch (e) {
+      alert(e.response?.data?.message || 'Failed to delete course')
+    }
   }
 }
 
@@ -224,8 +227,11 @@ const swapLessons = async (lessonA, lessonB) => {
               <h1 class="text-xl font-bold text-gray-800">Course Manager</h1>
             </div>
           </div>
-          <div class="flex items-center">
-            <span class="mr-4 text-gray-600">{{ authStore.user?.email }}</span>
+          <div class="flex items-center gap-4">
+            <router-link to="/metrics" class="text-indigo-600 hover:text-indigo-800 font-medium">
+              📊 Metrics
+            </router-link>
+            <span class="text-gray-600">{{ authStore.user?.email }}</span>
             <button @click="authStore.logout" class="rounded bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">
               Logout
             </button>
@@ -294,6 +300,10 @@ const swapLessons = async (lessonA, lessonB) => {
               
               <button @click="handleDelete(course.id)" class="rounded bg-red-100 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-200">
                 Delete
+              </button>
+
+              <button v-if="authStore.user?.roles?.includes('Admin')" @click="handleDelete(course.id, true)" class="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700">
+                Hard Delete
               </button>
             </div>
           </div>

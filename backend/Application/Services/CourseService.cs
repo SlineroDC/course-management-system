@@ -5,9 +5,10 @@ using Domain.Enums;
 
 namespace Application.Services;
 
-public class CourseService(ICourseRepository repository) : ICourseService
+public class CourseService(ICourseRepository repository, ILessonRepository lessonRepository) : ICourseService
 {
     private readonly ICourseRepository _repository = repository;
+    private readonly ILessonRepository _lessonRepository = lessonRepository;
 
     public async Task<IEnumerable<CourseResponse>> GetAllAsync()
     {
@@ -89,6 +90,33 @@ public class CourseService(ICourseRepository repository) : ICourseService
     public async Task DeleteAsync(Guid id)
     {
         await _repository.DeleteAsync(id);
+    }
+
+    public async Task HardDeleteAsync(Guid id)
+    {
+        await _repository.HardDeleteAsync(id);
+    }
+
+    public async Task<MetricsResponse> GetMetricsAsync()
+    {
+        var allCourses = await _repository.GetAllAsync();
+        var totalCourses = allCourses.Count();
+        var publishedCourses = allCourses.Count(c => c.Status == CourseStatus.Published);
+
+        // Count all lessons across all courses
+        var totalLessons = 0;
+        foreach (var course in allCourses)
+        {
+            var lessons = await _lessonRepository.GetByCourseIdAsync(course.Id);
+            totalLessons += lessons.Count();
+        }
+
+        return new MetricsResponse
+        {
+            TotalCourses = totalCourses,
+            PublishedCourses = publishedCourses,
+            TotalLessons = totalLessons
+        };
     }
 
     private static CourseResponse MapToResponse(Course c)

@@ -46,9 +46,10 @@ export const useCourseStore = defineStore('courses', {
         throw e
       }
     },
-    async deleteCourse(id) {
+    async deleteCourse(id, hardDelete = false) {
       try {
-        await axios.delete(`/courses/${id}`)
+        const url = hardDelete ? `/courses/${id}?hardDelete=true` : `/courses/${id}`
+        await axios.delete(url)
         await this.fetchCourses(this.currentPage) // Refresh
       } catch (e) {
         throw e
@@ -104,6 +105,14 @@ export const useCourseStore = defineStore('courses', {
     async moveDownLesson(id) {
       try {
         await axios.put(`/lessons/${id}/move-down`)
+      } catch (e) {
+        throw e
+      }
+    },
+    async fetchMetrics() {
+      try {
+        const response = await axios.get('/courses/metrics')
+        return response.data
       } catch (e) {
         throw e
       }

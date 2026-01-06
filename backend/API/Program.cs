@@ -50,9 +50,10 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins("http://localhost:5173") // URL del cliente Vue 3
+                .SetIsOriginAllowed(_ => true)
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         }
     );
 });
@@ -73,8 +74,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var context = services.GetRequiredService<ApplicationDbContext>();
-        await DataSeeder.SeedAsync(userManager, context);
+        await DataSeeder.SeedAsync(userManager, roleManager, context);
     }
     catch (Exception ex)
     {

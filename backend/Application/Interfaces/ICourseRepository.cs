@@ -10,5 +10,6 @@ public interface ICourseRepository
     Task AddAsync(Course course);
     Task UpdateAsync(Course course);
     Task DeleteAsync(Guid id);
+    Task HardDeleteAsync(Guid id);
     Task<bool> HasLessonsAsync(Guid courseId);
 }

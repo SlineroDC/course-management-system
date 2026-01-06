@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const instance = axios.create({
-  baseURL: 'http://localhost:5070/api'
+  baseURL: '/api' // Use relative path for Nginx proxy
 })
 
 instance.interceptors.request.use(config => {

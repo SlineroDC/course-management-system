@@ -58,28 +58,6 @@ public class LessonService(ILessonRepository repository) : ILessonService
             var isDuplicate = await _repository.IsOrderDuplicateAsync(lesson.CourseId, request.Order);
             if (isDuplicate)
             {
-                // NOTE: For swapping, we might need to bypass this or handle it differently.
-                // However, the user said "Envía dos peticiones PUT".
-                // If we swap, one will temporarily duplicate the other's order if we are not careful.
-                // But typically swapping involves: A -> temp, B -> A, temp -> B.
-                // Or simply: A -> newOrder (which is B's old order).
-                // If B still has that order, it fails.
-                // The user's requirement "Envía dos peticiones PUT" implies we might hit a constraint.
-                // BUT, IsOrderDuplicateAsync checks the DB.
-                // If we want to allow swapping, we might need to relax this check OR the frontend needs to be smart.
-                // For now, let's keep the strict check. If the user swaps, they might need to move A to 0 (temp), move B to A's spot, move A to B's spot.
-                // OR, we can assume the user will handle it.
-                // Let's keep the check but maybe allow if it's the same ID (already handled by logic).
-
-                // Wait, if I swap A (1) and B (2).
-                // 1. Update A to 2. DB has B at 2. Conflict!
-                // We need a way to swap.
-                // Maybe we don't enforce unique index in DB? We do.
-                // The user said "El sistema impide crear una lección con un Order que ya existe".
-                // It didn't explicitly say "impide actualizar".
-                // But logically it should.
-
-                // Let's stick to the requirement.
                 throw new InvalidOperationException(
                    $"Ya existe una lección con el orden {request.Order} en este curso."
                );
@@ -107,12 +85,21 @@ public class LessonService(ILessonRepository repository) : ILessonService
         if (previousLesson == null)
             throw new InvalidOperationException("No previous lesson to move up to.");
 
-        int temp = lesson.Order;
-        lesson.Order = previousLesson.Order;
-        previousLesson.Order = temp;
+        int lessonOrder = lesson.Order;
+        int prevOrder = previousLesson.Order;
 
+        // Use temp order to avoid unique constraint violation
+        // 1. Move lesson to temp (-1)
+        lesson.Order = -1;
         await _repository.UpdateAsync(lesson);
+
+        // 2. Move prev to lesson's spot
+        previousLesson.Order = lessonOrder;
         await _repository.UpdateAsync(previousLesson);
+
+        // 3. Move lesson (from temp) to prev's spot
+        lesson.Order = prevOrder;
+        await _repository.UpdateAsync(lesson);
     }
 
     public async Task MoveDownAsync(Guid id)
@@ -125,11 +112,20 @@ public class LessonService(ILessonRepository repository) : ILessonService
         if (nextLesson == null)
             throw new InvalidOperationException("No next lesson to move down to.");
 
-        int temp = lesson.Order;
-        lesson.Order = nextLesson.Order;
-        nextLesson.Order = temp;
+        int lessonOrder = lesson.Order;
+        int nextOrder = nextLesson.Order;
 
+        // Use temp order to avoid unique constraint violation
+        // 1. Move lesson to temp (-1)
+        lesson.Order = -1;
         await _repository.UpdateAsync(lesson);
+
+        // 2. Move next to lesson's spot
+        nextLesson.Order = lessonOrder;
         await _repository.UpdateAsync(nextLesson);
+
+        // 3. Move lesson (from temp) to next's spot
+        lesson.Order = nextOrder;
+        await _repository.UpdateAsync(lesson);
     }
 }

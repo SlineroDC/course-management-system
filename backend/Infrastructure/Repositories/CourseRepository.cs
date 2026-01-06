@@ -62,6 +62,19 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
         }
     }
 
+    public async Task HardDeleteAsync(Guid id)
+    {
+        var course = await _context.Courses.Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == id);
+        if (course != null)
+        {
+            // Remove all lessons first
+            _context.Lessons.RemoveRange(course.Lessons);
+            // Remove the course
+            _context.Courses.Remove(course);
+            await _context.SaveChangesAsync();
+        }
+    }
+
     public async Task<bool> HasLessonsAsync(Guid courseId)
     {
         return await _context.Lessons.AnyAsync(l => l.CourseId == courseId);
